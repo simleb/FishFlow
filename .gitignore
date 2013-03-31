@@ -1,0 +1,7 @@
+.DS_Store
+*~
+
+# Ignore all directories except: src doc
+/*/
+!/src/
+!/doc/
