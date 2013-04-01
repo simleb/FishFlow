@@ -41,7 +41,6 @@ namespace FishFlow
         void writeToFile(const Calc::Output& out);
 
         void plotDensity(cv::Mat& frame, const cv::Mat& density, bool transparent = false);
-        void plotAlignment(cv::Mat& frame, const cv::Mat& alignement, bool transparent = false);
         void plotVelocity(cv::Mat& frame, const cv::Mat& velocity, const cv::Mat& mask = cv::Mat());
 
         void drawArrow(cv::Mat& frame, const cv::Point& p1, const cv::Point& p2);
@@ -57,10 +56,9 @@ namespace FishFlow
         size_t _height;
         enum PlotType {
             ORIGINAL  = 1 << 0,
-            ALIGNMENT = 1 << 1,
-            DENSITY   = 1 << 2,
-            VELOCITY  = 1 << 3,
-            USE_MASK  = 1 << 4
+            DENSITY   = 1 << 1,
+            VELOCITY  = 1 << 2,
+            USE_MASK  = 1 << 3
         };
         std::vector<uchar> _plot_type;
         std::vector<std::string> _plot_path;
@@ -71,7 +69,6 @@ namespace FishFlow
         H5::H5File _file;
         H5::DataSet _velocity_dset;
         H5::DataSet _density_dset;
-        H5::DataSet _alignment_dset;
         H5::DataType _8U_dtype;
         H5::CompType _Vec2f_dtype;
         H5::DataSpace _mem_dspace;

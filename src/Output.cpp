@@ -18,10 +18,6 @@
 #include "Output.hpp"
 
 #include "Config.hpp"
-#include <sstream>
-#include <iomanip>
-#include <algorithm>
-#include <boost/format.hpp>
 #include <boost/algorithm/clamp.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/math/constants/constants.hpp>
@@ -42,7 +38,6 @@ namespace FishFlow
     _width(config["crop.width"].as<size_t>()),
     _height(config["crop.height"].as<size_t>()),
     _write_file(false),
-    // _file(config["output.file"].as<std::string>(), H5F_ACC_TRUNC),
     _8U_dtype(H5::PredType::NATIVE_UCHAR),
     _Vec2f_dtype(sizeof(cv::Vec2f))
     {
@@ -57,14 +52,9 @@ namespace FishFlow
             _plot_type.push_back(DENSITY);
             _plot_path.push_back(config["output.video.density"].as<std::string>());
         }
-        // if (config.count("output.video.alignment"))
-        // {
-        //     _plot_type.push_back(ALIGNMENT);
-        //     _plot_path.push_back(config["output.video.alignment"].as<std::string>());
-        // }
         if (config.count("output.video.velocity+original"))
         {
-            _plot_type.push_back(ORIGINAL|VELOCITY);
+            _plot_type.push_back(ORIGINAL|VELOCITY|USE_MASK);
             _plot_path.push_back(config["output.video.velocity+original"].as<std::string>());
         }
         if (config.count("output.video.density+original"))
@@ -72,31 +62,16 @@ namespace FishFlow
             _plot_type.push_back(ORIGINAL|DENSITY);
             _plot_path.push_back(config["output.video.density+original"].as<std::string>());
         }
-        // if (config.count("output.video.alignment+original"))
-        // {
-        //     _plot_type.push_back(ORIGINAL|ALIGNMENT);
-        //     _plot_path.push_back(config["output.video.alignment+original"].as<std::string>());
-        // }
         if (config.count("output.video.velocity+density"))
         {
             _plot_type.push_back(VELOCITY|DENSITY);
             _plot_path.push_back(config["output.video.velocity+density"].as<std::string>());
         }
-        // if (config.count("output.video.velocity+alignment"))
-        // {
-        //     _plot_type.push_back(VELOCITY|ALIGNMENT);
-        //     _plot_path.push_back(config["output.video.velocity+alignment"].as<std::string>());
-        // }
         if (config.count("output.video.velocity+density+original"))
         {
             _plot_type.push_back(VELOCITY|DENSITY|ORIGINAL);
             _plot_path.push_back(config["output.video.velocity+density+original"].as<std::string>());
         }
-        // if (config.count("output.video.velocity+alignment+original"))
-        // {
-        //     _plot_type.push_back(VELOCITY|ALIGNMENT|ORIGINAL);
-        //     _plot_path.push_back(config["output.video.velocity+alignment+original"].as<std::str)ing>();
-        // }
 
         for (size_t i = 0; i < _plot_type.size(); ++i)
         {
@@ -166,7 +141,6 @@ namespace FishFlow
             _Vec2f_dtype.insertMember("y", sizeof(float), H5::PredType::NATIVE_FLOAT);
             _velocity_dset = _file.createDataSet("velocity", _Vec2f_dtype, _file_dspace);
             _density_dset = _file.createDataSet("density", _8U_dtype, _file_dspace);
-            _alignment_dset = _file.createDataSet("alignment", _8U_dtype, _file_dspace);
         }
     }
 
@@ -195,10 +169,6 @@ namespace FishFlow
             {
                 plotDensity(composite, out.density, transparent);
             }
-            else if (_plot_type[i] & ALIGNMENT)
-            {
-                plotAlignment(composite, out.alignment, transparent);
-            }
             
             if (_plot_type[i] & (VELOCITY | USE_MASK))
             {
@@ -209,7 +179,6 @@ namespace FishFlow
                 plotVelocity(composite, out.velocity);
             }
 
-//            cv::imwrite(str(boost::format("%s%06d.jpg") % _plot_type[i] % _frame), composite);
             _video_writer[i] << composite;
         }
 
@@ -231,10 +200,6 @@ namespace FishFlow
         // Density
         cv::resize(out.density, buffer, buffer.size());
         _density_dset.write(buffer.ptr(), _8U_dtype, _mem_dspace, _file_dspace);
-
-        // Alignment
-        cv::resize(out.density, buffer, buffer.size());
-        _alignment_dset.write(buffer.ptr(), _8U_dtype, _mem_dspace, _file_dspace);
     }
 
     namespace
@@ -282,21 +247,16 @@ namespace FishFlow
         }
     }
 
-    void Output::plotAlignment(cv::Mat& frame, const cv::Mat& alignment, bool transparent)
-    {
-
-    }
-
     void Output::plotVelocity(cv::Mat& frame, const cv::Mat& velocity, const cv::Mat& mask)
     {
-        const bool use_mask = !mask.empty();
+        const bool no_mask = mask.empty();
         const size_t nx = _nx % 2 ? _nx - 1 : _nx;
         const size_t ny = _ny % 2 ? _ny - 1 : _ny;
         for (int i = 0; i < ny / 2; ++i)
         {
             for (int j = 0; j < nx / 2; ++j)
             {
-                if (use_mask && mask.at<unsigned char>(2 * i + 1, 2 * j + 1))
+                if (no_mask || mask.at<unsigned char>(2 * i + 1, 2 * j + 1))
                 {
                     cv::Point p1, p2;
                     p1.x = _width * (2 * j + 1) / nx;
@@ -343,41 +303,30 @@ namespace FishFlow
     {
         po::options_description options("Output");
         options.add_options()
-        ("output.file,o", po::value<std::string>(),
+        ("output.file,o", po::value<std::string>()->implicit_value(""),
          "path of the output hdf5 file")
         ("output.width", po::value<size_t>()->default_value(128),
          "horizontal resolution of the output grid")
         ("output.height", po::value<size_t>()->default_value(64),
          "vertical resolution of the output grid")
-        // ("plot.path", po::value<std::string>()->default_value("."), "path for the output plot")
         ("output.video.velocity", po::value<std::string>(),
          "path to output velocity video")
         ("output.video.density", po::value<std::string>(),
          "path to output density video")
-        // ("output.video.alignment", po::value<std::string>(),
-        //  "produce alignment plots?")
         ("output.video.velocity+original", po::value<std::string>(),
          "path to output velocity+original video")
         ("output.video.density+original", po::value<std::string>(),
          "path to output density+original video")
-        // ("output.video.alignment+original", po::value<std::string>(),
-        //  "produce alignment+original plots?")
         ("output.video.velocity+density", po::value<std::string>(),
          "path to output velocity+density video")
-        // ("output.video.velocity+alignment", po::value<std::string>(),
-        //  "produce velocity+alignment plots?")
         ("output.video.velocity+density+original", po::value<std::string>(),
          "path to output velocity+density+original video")
-        // ("output.video.velocity+alignment+original", po::value<std::string>(),
-        //  "produce velocity+alignment+original plots?")
         ("plot.style.arrow.thickness", po::value<size_t>()->default_value(2),
          "thickness of arrows on plots")
         ("plot.style.arrow.head_size", po::value<size_t>()->default_value(4),
          "size of arrow heads on plots")
         ("plot.style.arrow.overlap", po::value<bool>()->default_value(true),
          "allow arrows to overlap?");
-        // ("plot.style.arrow.color", po::value<std::string>()->default_value("red"),
-        //  "color of arrows on plots");
 
         return options;
     }
