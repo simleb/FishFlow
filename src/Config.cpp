@@ -79,7 +79,11 @@ namespace FishFlow
         else if (boost::iequals(verbosity, "Low"))
             _verbosity = LOW;
         else if (boost::iequals(verbosity, "Quiet"))
+        {
             _verbosity = QUIET;
+            // Deactivate cerr completely
+            std::cerr.setstate(std::ios_base::badbit);
+        }
         else if (boost::iequals(verbosity, "Debug"))
             _verbosity = DEBUG;
         else

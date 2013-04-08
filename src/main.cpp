@@ -25,13 +25,10 @@ int main(int argc, char* argv[])
 {
     using namespace FishFlow;
 
-    bool quiet;
     try
     {
         // Parse command line, config files and standard input
         Config config(argc, argv);
-
-        quiet = config.verbosity() == Config::QUIET;
 
         // Open input stream
         Input input(config);
@@ -57,7 +54,7 @@ int main(int argc, char* argv[])
     }
     catch (const std::exception& e)
     {
-        if (!quiet) std::cerr << "Fatal: " << e.what() << std::endl;
+        std::cerr << "Fatal: " << e.what() << std::endl;
         return -1;
     }
 }

@@ -76,7 +76,9 @@ set(SOURCES
 # Create main target
 add_executable(fishFlow ${SOURCES})
 target_link_libraries(fishFlow ${LIBRARIES})
-target_link_libraries(fishFlow debug ${GOOGLE_PERFTOOLS_PROFILER})
+if(GOOGLE_PERFTOOLS_PROFILER)
+    target_link_libraries(fishFlow debug ${GOOGLE_PERFTOOLS_PROFILER})
+endif()
 
 # Enable all warnings
 if(CMAKE_COMPILER_IS_GNUCXX OR ${CMAKE_CXX_COMPILER_ID} MATCHES Clang)
