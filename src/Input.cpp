@@ -52,7 +52,7 @@ namespace FishFlow
     void Input::skipFrames(const size_t n)
     {
         // Skip frames instead of setting CV_CAP_PROP_POS_FRAMES to avoid issue with keyframes
-        for (size_t i = 0; i < n; ++i) _capture.grab();
+        for (size_t i = 1; i < n; ++i) _capture.grab();
     }
 
     
