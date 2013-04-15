@@ -29,7 +29,7 @@ namespace FishFlow
 
     Input::Input(const Config& config) :
     _capture(config["input.file"].as<std::string>()),
-    _frame(0),
+    _frame(config["frame.from"].as<size_t>()),
     _from(config["frame.from"].as<size_t>()),
     _to(config["frame.to"].as<size_t>()),
     _by(config["frame.by"].as<size_t>()),
