@@ -1,8 +1,8 @@
-# Fish Flow
+# FishFlow
 
-## What is Fish Flow
+## What is FishFlow
 
-Fish Flow is a tool to compute the [optical flow][] of by moving particles.
+FishFlow is a tool to compute the [optical flow][] of by moving particles.
 It loads images from a video file and outputs data and videos of the optical flow.
 
 It works by detecting spatial and temporal correlations of pixel intensities.
@@ -13,7 +13,7 @@ It was built in order to extract the motion of schooling fish in a laboratory se
 
 ## Build information
 
-The build process is managed by [CMake][]. The easiest way to build is to open in your terminal the root directory of the Fish Flow repository and to type:
+The build process is managed by [CMake][]. The easiest way to build is to open in your terminal the root directory of the FishFlow repository and to type:
 
 	mkdir build
 	cd build
@@ -37,7 +37,7 @@ But first you need to make sure that the following dependencies are installed on
 
 ## How to use it
 
-Fish Flow is a command line tool. If the executable is in your current directory, type `./fishFlow` to run it.
+FishFlow is a command line tool. If the executable is in your current directory, type `./fishFlow` to run it.
 
 You can show usage information and a list of options with `./fishFlow -h` or `./fishFlow --help`.
 
@@ -75,9 +75,9 @@ Have a look at `config.ini` for a more complete example of config file.
 
 ### Required options
 
-At the minimum, you need to provide an input file. If this is all you specify, Fish Flow will produce an output data file in the same directory and with the same name as the input video (but with a `.h5` extension).
+At the minimum, you need to provide an input file. If this is all you specify, FishFlow will produce an output data file in the same directory and with the same name as the input video (but with a `.h5` extension).
 
-If you ask for an output video, Fish Flow will not produce an output data file unless you also ask it to. You can ask for multiple output videos.
+If you ask for an output video, FishFlow will not produce an output data file unless you also ask it to. You can ask for multiple output videos.
 
 ### Errors
 
@@ -86,4 +86,4 @@ If you get errors that you don't understand, you can set `verbosity` to `High` t
 
 ## License
 
-The source for Fish Flow is released under the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+The source for FishFlow is released under the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
