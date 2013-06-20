@@ -2,7 +2,7 @@
 
 ## What is FishFlow
 
-FishFlow is a tool to compute the [optical flow][] of by moving particles.
+FishFlow is a tool to compute the [optical flow][] of moving particles.
 It loads images from a video file and outputs data and videos of the optical flow.
 
 It works by detecting spatial and temporal correlations of pixel intensities.
