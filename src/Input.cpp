@@ -29,10 +29,10 @@ namespace FishFlow
 
     Input::Input(const Config& config) :
     _capture(config["input.file"].as<std::string>()),
-    _frame(config["frame.from"].as<size_t>()),
-    _from(config["frame.from"].as<size_t>()),
-    _to(config["frame.to"].as<size_t>()),
-    _by(config["frame.by"].as<size_t>()),
+    _frame(config["frame.start"].as<size_t>()),
+    _start(config["frame.start"].as<size_t>()),
+    _stop(config["frame.stop"].as<size_t>()),
+    _step(config["frame.step"].as<size_t>()),
     _ROI(config["crop.xmin"].as<size_t>(), config["crop.ymin"].as<size_t>(),
          config["crop.width"].as<size_t>(), config["crop.height"].as<size_t>()),
     _show_progress(config.verbosity() >= Config::NORMAL)
@@ -45,14 +45,14 @@ namespace FishFlow
         if (config.count("output.background.file"))
             computeBackgroundImage(config);
 
-        skipFrames(_from);
+        skipFrames(_start - 1);
     }
 
 
     void Input::skipFrames(const size_t n)
     {
         // Skip frames instead of setting CV_CAP_PROP_POS_FRAMES to avoid issue with keyframes
-        for (size_t i = 1; i < n; ++i) _capture.grab();
+        for (size_t i = 0; i < n; ++i) _capture.grab();
     }
 
     
@@ -77,24 +77,33 @@ namespace FishFlow
     Input& Input::operator>>(Calc::Input& frames)
     {
         cv::Mat buffer;
-        if (frames.old.empty())
+        if (_frame == _start)
         {
             _capture >> buffer;
             buffer(_ROI).copyTo(frames.old);
 
-            skipFrames(_by);
-            _frame += _by;
+            skipFrames(_step - 1);
+            _frame += _step;
         }
         else
         {
             frames.current.copyTo(frames.old);
         }
 
-        _capture >> buffer;
-        buffer(_ROI).copyTo(frames.current);
+		if (_frame <= _stop)
+		{
+        	_capture >> buffer;
+			if (buffer.empty())
+			{
+				_frame = _stop + 1;
+				std::cerr << "Warning: reached the end of the input file too early" << std::endl;
+				return *this;
+			}
+        	buffer(_ROI).copyTo(frames.current);
 
-        skipFrames(_by);
-        _frame += _by;
+        	skipFrames(_step - 1);
+        	_frame += _step;
+		}
 
         return *this;
     }
@@ -103,7 +112,7 @@ namespace FishFlow
     Input::operator bool() const
     {
         if (_show_progress) showProgress();
-        return _frame <= _to;
+        return _frame <= _stop;
     }
 
 
@@ -118,13 +127,13 @@ namespace FishFlow
             if (w.ws_col > 0) cols = w.ws_col;
 
             // Display percentage
-            const size_t frame = _frame - _by;
-            std::cout << '\r' << std::setw(3) << (frame - _from) * 100 / (_to - _from) << '%' << std::flush;
+            const size_t frame = _frame - _step;
+            std::cout << '\r' << std::setw(3) << (frame - _start) * 100 / (_stop - _start) << '%' << std::flush;
 
             // Display progress bar
             if (cols > 11)
             {
-                const size_t pos = 2 + (frame - _from) * (cols - 10) / (_to - _from);
+                const size_t pos = 2 + (frame - _start) * (cols - 10) / (_stop - _start);
                 std::cout << " [";
                 for (size_t i = 1; i < pos - 1; ++i) std::cout << '~';
                 std::cout << "><>";
@@ -133,12 +142,12 @@ namespace FishFlow
             }
 
             // End the line if progress reaches 100%
-            if (frame >= _to) std::cout << std::endl;
+            if (frame >= _stop) std::cout << std::endl;
         }
         else
         {
             // Display plain percentage on a new line
-            std::cout << (_frame - _by - _from) * 100 / (_to - _from) << std::endl;
+            std::cout << (_frame - _step - _start) * 100 / (_stop - _start) << std::endl;
         }
     }
 
@@ -149,10 +158,10 @@ namespace FishFlow
         options.add_options()
         ("input.file,i", po::value<std::string>(), "path of the input file")
         ("input.background,b", po::value<std::string>(), "path of the background image")
-        ("frame.from", po::value<size_t>()->default_value(1), "first frame (starts at 0)")
-        ("frame.to" , po::value<size_t>(), "last frame (not included)")
-        ("frame.count" , po::value<size_t>(), "number of frames")
-        ("frame.by" , po::value<size_t>()->default_value(1), "by frames")
+        ("frame.start", po::value<size_t>()->default_value(1), "first frame to read")
+        ("frame.stop" , po::value<size_t>(), "last frame to read")
+		("frame.step" , po::value<size_t>()->default_value(1), "increment between frames")
+        ("frame.count" , po::value<size_t>(), "number of frames to read")
         ("crop.xmin", po::value<size_t>()->default_value(0), "min x coord of crop rectangle")
         ("crop.ymin", po::value<size_t>()->default_value(0), "min y coord of crop rectangle")
         ("crop.xmax", po::value<size_t>(), "max x coord of crop rectangle")
@@ -240,19 +249,20 @@ namespace FishFlow
     }
 
 
-    /* Formula: count == (to - from) / by */
+    // Formula: count == (stop - start + 1) / step
+	// start:step:stop -> start:step:max(0, trunc(stop-start+step / step))
     void Input::validateFrameCount(Config& config)
     {
         using namespace std;
         
-        const size_t from = config["frame.from"].as<size_t>();
-        const size_t by = config["frame.by"].as<size_t>();
+        const size_t start = config["frame.start"].as<size_t>();
+        const size_t step = config["frame.step"].as<size_t>();
         const size_t max_count = config["frame.max_count"].as<size_t>();
-        size_t to = max_count;
-        size_t count = max_count - 1;
+        size_t stop = max_count;
+        size_t count = max_count;
 
-        if (config.count("frame.to"))
-            to = config["frame.to"].as<size_t>();
+        if (config.count("frame.stop"))
+            stop = config["frame.stop"].as<size_t>();
 
         if (config.count("frame.count"))
             count = config["frame.count"].as<size_t>();
@@ -262,86 +272,95 @@ namespace FishFlow
         help_string << "  The parameters specified for the frames to process are not consistent." << endl;
         help_string << "  Two frames are needed to compute optical flow." << endl;
         help_string << "  Here are the rules:" << endl;
-        help_string << "    1) 0 < from < to < " << max_count << ": the number of frames in the video" << endl;
-        help_string << "    2) by > 0" << endl;
-        help_string << "    3) If count != (to - from) / by, the smallest time interval is chosen" << endl;
+        help_string << "    1) 0 < start < stop <= " << max_count << ": the number of frames in the video" << endl;
+        help_string << "    2) step > 0" << endl;
+        help_string << "    3) If count != (stop - start + 1) / step, the smallest time interval is chosen" << endl;
         help_string << endl;
 
-        if (from == 0)
+        if (start == 0)
         {
             if (config.verbosity() >= Config::HIGH) cerr << help_string.str();
-            throw runtime_error("frame.from == 0 !");
+            throw runtime_error("frame.start == 0 !");
         }
-        if (by < 1)
+        if (step < 1)
         {
             if (config.verbosity() >= Config::HIGH) cerr << help_string.str();
-            throw runtime_error("frame.by < 1 !");
+            throw runtime_error("frame.step < 1 !");
         }
-        if (from > to)
+        if (start > stop)
         {
             if (config.verbosity() >= Config::HIGH) cerr << help_string.str();
-            throw runtime_error("frame.from > frame.to !");
+            throw runtime_error("frame.start > frame.stop !");
         }
-        if (to > max_count)
+        if (stop > max_count)
         {
             if (config.verbosity() >= Config::HIGH) cerr << help_string.str();
-            throw runtime_error("frame.to is greater than the number of frames in the video !");
+            throw runtime_error("frame.stop is greater than the number of frames in the video !");
         }
-        if ((to - from) / by != count)
+        if ((stop - start + 1) / step != count)
         {
-            if (config.count("frame.to") && config.count("frame.count"))
+            if (config.count("frame.stop") && config.count("frame.count"))
             {
-                if ((to - from) / by > count)
+                if ((stop - start + 1) / step > count)
                 {
-                    to = from + count * by;
+                    stop = start + count * step;
                     if (config.verbosity() >= Config::LOW)
                     {
-                        cerr << "Warning: frame.to > frame.from + frame.count * frame.by" << endl;
-                        cerr << "         Setting it to the smallest value (" << to << ")" << endl;
+                        cerr << "Warning: frame.stop > frame.start + frame.count * frame.step" << endl;
+                        cerr << "         Setting frame.stop to " << stop << endl;
                     }
                 }
                 else
                 {
-                    count = (to - from) / by;
+                    count = (stop - start + 1) / step;
                     if (config.verbosity() >= Config::LOW)
                     {
-                        cerr << "Warning: frame.count > (frame.to - frame.from) / frame.by;" << endl;
-                        cerr << "         Setting it to the smallest value (" << count << ")" << endl;
+                        cerr << "Warning: frame.count > (frame.stop - frame.start) / frame.step;" << endl;
+                        cerr << "         Setting frame.count to " << count << endl;
                     }
                 }
             }
             else if (config.count("frame.count"))
             {
-                to = from + count;
+                stop = start + count * step;
             }
             else
             {
-                count = (to - from) / by;
+                count = (stop - start + 1) / step;
             }
         }
-        if (from == to)
+        if (start == stop)
         {
             if (config.verbosity() >= Config::LOW)
             {
-                cerr << "Warning: frame.from == frame.to" << endl;
+                cerr << "Warning: frame.start == frame.stop" << endl;
                 cerr << "         At least two frames are necessary to";
                 cerr << " compute optical flow" << endl;
                 cerr << "         No output produced." << endl;
             }
             throw Quit();
         }
-        if (to > max_count)
+        if (stop > max_count)
         {
+			stop = max_count;
             if (config.verbosity() >= Config::LOW)
             {
-                cerr << "Warning: frame.to is larger than the number of frames in the input video." << endl;
-                cerr << "         Setting it to the maximum (" << count << ")" << endl;
+                cerr << "Warning: frame.stop is larger than the number of frames in the input video." << endl;
+                cerr << "         Setting frame.stop to " << stop << endl;
             }
-            to = count;
         }
 
-        replace(config, "frame.to", to);
+        replace(config, "frame.stop", stop);
         replace(config, "frame.count", count);
+		
+		if (config.verbosity() >= Config::DEBUG)
+		{
+			cerr << "frame.start: " << start << endl;
+			cerr << "frame.stop : " << stop << endl;
+			cerr << "frame.step : " << step << endl;
+			cerr << "frame.count: " << count << endl;
+			cerr << "max_count  : " << max_count << endl;
+		}
     }
 
 

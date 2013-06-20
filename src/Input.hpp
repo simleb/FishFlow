@@ -51,9 +51,9 @@ namespace FishFlow
 
         cv::VideoCapture _capture;
         size_t _frame;
-        size_t _from;
-        size_t _to;
-        size_t _by;
+        size_t _start;
+        size_t _stop;
+        size_t _step;
         cv::Rect _ROI;
         bool _show_progress;
     };
