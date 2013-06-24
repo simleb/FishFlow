@@ -54,7 +54,7 @@ Options can be specified in three ways:
 
 Note for C++ Programmers: The options are handled by the Boost library [Program Options][]. Please refer to Boost's documentation for more information.
 
-[Program Options][]: www.boost.org/doc/html/program_options.html
+[Program Options]: www.boost.org/doc/html/program_options.html
 
 Type `fishFlow -h` to see the list of options. An option looks like a list of words separated by dots. The first words can be seen as *sections* while the last word is the specific option within that section. For instance `frame.count` is the total number of frames from the input video that you want to process. You can specify it in a config file by writing:
 
