@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
         Input input(config);
 
         // Create calculator
-        Calc calc(config);
+        Calc calc(config, input.background());
 
         // Create output files
         Output output(config);

@@ -35,6 +35,7 @@ namespace FishFlow
         Input(const Config& config);
         Input& operator>>(Calc::Input& frames);
         operator bool() const;
+        const cv::Mat& background() const { return _background; }
 
         static po::options_description options(Config& config);
 
@@ -56,8 +57,9 @@ namespace FishFlow
         size_t _step;
         cv::Rect _ROI;
         bool _show_progress;
+        cv::Mat _background;
     };
-    
+
 }
 
 #endif

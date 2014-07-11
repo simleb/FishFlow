@@ -24,7 +24,8 @@
 namespace FishFlow
 {
 
-    Calc::Calc(const Config& config) :
+    Calc::Calc(const Config& config, const cv::Mat& background) :
+    _background(background),
     _scale(config["calc.scale"].as<double>()),
     _nx(config["output.width"].as<size_t>()),
     _ny(config["output.height"].as<size_t>()),
@@ -33,23 +34,6 @@ namespace FishFlow
     {
         const size_t window_size = config["calc.window_size"].as<size_t>() | 1;
         _window_size = cv::Size(window_size, window_size);
-
-        // Init background image
-        cv::Rect ROI(config["crop.xmin"].as<size_t>(), config["crop.ymin"].as<size_t>(),
-                     config["crop.width"].as<size_t>(), config["crop.height"].as<size_t>());
-        if (config.count("input.background"))
-        {
-            _background = cv::imread(config["input.background"].as<std::string>(),
-                                            CV_LOAD_IMAGE_GRAYSCALE);
-            if (_background.size() != ROI.size())
-            {
-                _background = _background(ROI);
-            }
-        }
-        else
-        {
-            _background = cv::Mat::ones(ROI.size(), CV_8UC1) * 255;
-        }
 
         // Init matrices
         const int dims[] = { _ny, _nx, 2 };

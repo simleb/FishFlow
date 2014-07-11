@@ -42,8 +42,22 @@ namespace FishFlow
             throw std::runtime_error("Video capture could not be open.");
         }
 
-        if (config.count("output.background.file"))
+        // Init background image
+        if (config.count("input.background"))
+        {
+            _background = cv::imread(config["input.background"].as<std::string>(),
+                                     CV_LOAD_IMAGE_GRAYSCALE);
+            if (_background.size() != _ROI.size())
+            {
+                _background = _background(_ROI);
+            }
+        }
+        else
+        {
+            std::cout << "Computing background image:" << std::endl;
             computeBackgroundImage(config);
+            std::cout << "Processing input file:" << std::endl;
+        }
 
         skipFrames(_start - 1);
     }
@@ -55,22 +69,32 @@ namespace FishFlow
         for (size_t i = 0; i < n; ++i) _capture.grab();
     }
 
-    
+
     void Input::computeBackgroundImage(const Config& config)
     {
         const cv::Size max_size(config["crop.max_width"].as<size_t>(),
                                 config["crop.max_height"].as<size_t>());
         const cv::Rect rect(config["output.background.cropped"].as<bool>() ?
                             _ROI : cv::Rect(cv::Point(0, 0), max_size));
-        cv::Mat background(rect.size(), CV_32FC1, cv::Scalar::all(0)), color, gray;
-        while (_capture.read(color))
+        _background = cv::Mat(rect.size(), CV_32FC1, cv::Scalar::all(0));
+        cv::Mat color, gray;
+        skipFrames(_start - 1);
+        while (_frame <= _stop && _capture.read(color))
         {
             cv::cvtColor(color(rect), gray, CV_BGR2GRAY, 1);
-            cv::accumulate(gray, background);
+            cv::accumulate(gray, _background);
+            _frame++;
+            showProgress();
         }
-        background /= _capture.get(CV_CAP_PROP_FRAME_COUNT);
-        cv::imwrite(config["output.background.file"].as<std::string>(), background);
+        _background /= _capture.get(CV_CAP_PROP_FRAME_COUNT);
+        if (config.count("output.background.file"))
+        {
+            cv::imwrite(config["output.background.file"].as<std::string>(), _background);
+        }
+        gray = _background;
+        gray.assignTo(_background, CV_8UC1);
         _capture.set(CV_CAP_PROP_POS_FRAMES, 0);
+        _frame = _start;
     }
 
 
@@ -158,6 +182,8 @@ namespace FishFlow
         options.add_options()
         ("input.file,i", po::value<std::string>(), "path of the input file")
         ("input.background,b", po::value<std::string>(), "path of the background image")
+        ("output.background.file", po::value<std::string>(), "path of the output background image")
+        ("output.background.cropped", po::value<bool>()->default_value(false), "is the output background image cropped?")
         ("frame.start", po::value<size_t>()->default_value(1), "first frame to read")
         ("frame.stop" , po::value<size_t>(), "last frame to read")
 		("frame.step" , po::value<size_t>()->default_value(1), "increment between frames")
@@ -254,7 +280,7 @@ namespace FishFlow
     void Input::validateFrameCount(Config& config)
     {
         using namespace std;
-        
+
         const size_t start = config["frame.start"].as<size_t>();
         const size_t step = config["frame.step"].as<size_t>();
         const size_t max_count = config["frame.max_count"].as<size_t>();
@@ -352,7 +378,7 @@ namespace FishFlow
 
         replace(config, "frame.stop", stop);
         replace(config, "frame.count", count);
-		
+
 		if (config.verbosity() >= Config::DEBUG)
 		{
 			cerr << "frame.start: " << start << endl;
@@ -427,7 +453,7 @@ namespace FishFlow
                 std::cerr << "Warning: in crop parameters: xmax - xmin > width" << std::endl;
                 std::cerr << "         Setting xmax to be equal to width (" << xmax << ")" << std::endl;
             }
-            
+
         }
         else if (xmax - xmin < width)
         {

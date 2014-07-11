@@ -45,7 +45,7 @@ namespace FishFlow
             cv::Mat velocity;
         };
 
-        Calc(const Config& config);
+        Calc(const Config& config, const cv::Mat& background);
         const Output& operator()(const Input& frames);
 
         static po::options_description options();
@@ -65,7 +65,7 @@ namespace FishFlow
         size_t _width;
         size_t _height;
     };
-    
+
 }
 
 #endif
