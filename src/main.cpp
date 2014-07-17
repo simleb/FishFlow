@@ -267,7 +267,7 @@ int main(int argc, char* argv[]) {
 	smf[0] = cv::Mat(64, 128, CV_32FC1);
 	smf[1] = cv::Mat(64, 128, CV_32FC1);
 	cv::ocl::FarnebackOpticalFlow flow;
-	flow.winSize = 45;
+	// flow.winSize = 45;
 	flow.polyN = 7;
 	flow.polySigma = 1.5;
 	flow.flags = cv::OPTFLOW_FARNEBACK_GAUSSIAN;
