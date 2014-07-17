@@ -74,7 +74,7 @@ po::variables_map parse(int argc, char **argv) {
 		std::exit(0);
 	}
 	po::notify(vm);
-	if (!vm.count("data") && !vm.count("movie") && !vm["live"].as<bool>()) {
+	if (!vm.count("data") && !vm.count("movie") && !vm["live"].as<bool>() && !vm.count("info")) {
 		std::cout << "Fatal: no output was specified" << std::endl;
 		std::exit(-1);
 	}
