@@ -242,7 +242,6 @@ int main(int argc, char* argv[]) {
 	H5::DataSet velocity_dset;
 	H5::DataSet density_dset;
 	H5::CompType xy_dtype(2 * sizeof(float));
-	H5::DataSpace mem_dspace;
 	H5::DataSpace file_dspace;
 	if (data) {
 		std::string path = config["data"].as<std::string>();
@@ -250,9 +249,8 @@ int main(int argc, char* argv[]) {
 			path = config["input"].as<std::string>() + ".flow.h5";
 		}
 		file = H5::H5File(path, H5F_ACC_TRUNC);
-		const hsize_t dims[3] = { 64, 128, count };
-		mem_dspace = H5::DataSpace(2, dims);
-		file_dspace = H5::DataSpace(3, dims);
+		const hsize_t dims[3] = { count, 64, 128 };
+		file_dspace = H5::DataSpace(3, &dims[0]);
 		xy_dtype.insertMember("x", 0 * sizeof(float), H5::PredType::NATIVE_FLOAT);
 		xy_dtype.insertMember("y", 1 * sizeof(float), H5::PredType::NATIVE_FLOAT);
 		velocity_dset = file.createDataSet("velocity", xy_dtype, file_dspace);
@@ -306,18 +304,18 @@ int main(int argc, char* argv[]) {
 		}
 
 		if (data) {
-			const hsize_t count[3] = { 64, 128, 1 };
-			const hsize_t start[3] = { 0, 0, j };
+			const hsize_t count[3] = { 1, 64, 128 };
+			const hsize_t start[3] = { j, 0, 0 };
 			file_dspace.selectHyperslab(H5S_SELECT_SET, count, start);
 			cv::ocl::resize(u, usm, usm.size());
 			cv::ocl::resize(v, vsm, vsm.size());
 			smf[0] = usm;
 			smf[1] = vsm;
 			cv::merge(smf, 2, smf2);
-			velocity_dset.write(smf2.ptr(), xy_dtype, mem_dspace, file_dspace);
+			velocity_dset.write(smf2.ptr(), xy_dtype, H5::DataSpace::ALL, file_dspace);
 			cv::ocl::resize(dm, dsm, dsm.size());
 			sm = dsm;
-			density_dset.write(sm.ptr(), H5::PredType::NATIVE_UCHAR, mem_dspace, file_dspace);
+			density_dset.write(sm.ptr(), H5::PredType::NATIVE_UCHAR, H5::DataSpace::ALL, file_dspace);
 		}
 
 		std::cout << '\r' << dots[j%256] << ' ' << std::setw(3) << (j + 1) * 100 / count << "%" << std::flush;
