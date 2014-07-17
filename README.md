@@ -25,7 +25,7 @@ CMake Tips: You can use different generators. For instance to generate a Xcode p
 But first you need to make sure that the following dependencies are installed on your computer:
 
 - [CMake][] for the build process
-- [OpenCV][] for the image processing
+- [OpenCV][] (including OpenCL) for the image processing
 - [HDF5][] (including the C++ bindings) for the data output
 - [Boost][] (including Program Options) for the options input
 
@@ -33,7 +33,6 @@ But first you need to make sure that the following dependencies are installed on
 [OpenCV]: http://opencv.org
 [HDF5]: http://hdfgroup.org/HDF5/
 [Boost]: http://boost.org
-
 
 ## How to use it
 
@@ -75,14 +74,7 @@ Have a look at `config.ini` for a more complete example of config file.
 
 ### Required options
 
-At the minimum, you need to provide an input file. If this is all you specify, FishFlow will produce an output data file in the same directory and with the same name as the input video (but with a `.h5` extension).
-
-If you ask for an output video, FishFlow will not produce an output data file unless you also ask it to. You can ask for multiple output videos.
-
-### Errors
-
-If you get errors that you don't understand, you can set `verbosity` to `High` to get (sometimes) more detailed error messages.
-
+At the minimum, you need to provide an input file. If this is all you specify, FishFlow will produce an output data file in the same directory and with the same name as the input video (but with an additional `.flow.h5` extension).
 
 ## License
 

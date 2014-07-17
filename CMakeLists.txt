@@ -28,7 +28,7 @@ endif()
 # ---------------------------------------------------------------------------- #
 
 # Find OpenCV
-find_package(OpenCV REQUIRED core highgui)
+find_package(OpenCV REQUIRED core highgui ocl)
 include("${OpenCV_DIR}/OpenCVConfig.cmake")
 include_directories(${OpenCV_INCLUDE_DIRS})
 list(APPEND LIBRARIES ${OpenCV_LIBRARIES})
@@ -57,14 +57,8 @@ find_library(GOOGLE_PERFTOOLS_PROFILER profiler)
 
 # Add sources and headers
 set(SOURCES
-	src/Calc.hpp
-	src/Calc.cpp
-	src/Config.hpp
-	src/Config.cpp
-	src/Input.hpp
-	src/Input.cpp
-    src/Output.hpp
-    src/Output.cpp
+	src/plot.hpp
+	src/plot.cpp
 	src/main.cpp
 )
 
