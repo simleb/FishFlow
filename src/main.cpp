@@ -133,7 +133,9 @@ H5::H5File file;
 void siginthandler(int param)
 {
 	std::cerr << std::endl;
-	file.flush(H5F_SCOPE_GLOBAL);
+	if (file.getId()) {
+		file.flush(H5F_SCOPE_GLOBAL);
+	}
 	std::exit(-1);
 }
 
