@@ -199,7 +199,7 @@ int main(int argc, char* argv[]) {
 		bgpath = config["background"].as<std::string>();
 		bg = cv::imread(bgpath, CV_LOAD_IMAGE_GRAYSCALE);
 	} else {
-		bgpath = config["input"].as<std::string>() + ".backgroung.jpg";
+		bgpath = config["input"].as<std::string>() + ".background.jpg";
 	}
 	if (bg.empty()) {
 		bg = cv::Mat(h, w, CV_32FC1, cv::Scalar::all(0));
