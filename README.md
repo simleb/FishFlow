@@ -25,7 +25,7 @@ CMake Tips: You can use different generators. For instance to generate a Xcode p
 But first you need to make sure that the following dependencies are installed on your computer:
 
 - [CMake][] for the build process
-- [OpenCV][] (including OpenCL) for the image processing
+- [OpenCV][] for the image processing
 - [HDF5][] (including the C++ bindings) for the data output
 - [Boost][] (including Program Options) for the options input
 

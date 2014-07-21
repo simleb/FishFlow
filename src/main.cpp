@@ -10,7 +10,6 @@
 #include <boost/program_options.hpp>
 #include <H5Cpp.h>
 #include <opencv2/opencv.hpp>
-#include <opencv2/ocl/ocl.hpp>
 
 #include "plot.hpp"
 
@@ -262,39 +261,40 @@ int main(int argc, char* argv[]) {
 
 	// Compute density and optical flow
 	std::cerr << "Computing density and optical flow:" << std::endl;
-	cv::ocl::oclMat prev, next, dm, mask, u, v;
-	cv::ocl::oclMat dsm(64, 128, CV_8UC1), usm(64, 128, CV_32FC1), vsm(64, 128, CV_32FC1);
-	cv::Mat sm(64, 128, CV_8UC1), smf[2], smf2(64, 128, CV_32FC2);
-	smf[0] = cv::Mat(64, 128, CV_32FC1);
-	smf[1] = cv::Mat(64, 128, CV_32FC1);
-	cv::ocl::FarnebackOpticalFlow flow;
-	// flow.winSize = 45;
-	flow.polyN = 7;
-	flow.polySigma = 1.5;
-	flow.flags = cv::OPTFLOW_FARNEBACK_GAUSSIAN;
+	const cv::Size size(64, 128);
+	cv::Mat prev, next, mask, uv;
+	cv::Mat sd(64, 128, CV_8UC1), suv(64, 128, CV_32FC2);
+	// Gunnar Farneback’s Optical Flow options
+	const double pyr_scale = 0.5;
+	const int levels = 2;
+	const int winSize = 45;
+	const int iterations = 4;
+	const int poly_n = 7;
+	const double poly_sigma = 1.5;
+	int flags = cv::OPTFLOW_FARNEBACK_GAUSSIAN;
 	std::cout << "    0%" << std::flush;
 	for (int i = start, j = 0; i <= stop && cap.read(im); i += step, ++j) {
 		cv::cvtColor(im, gm, CV_RGB2GRAY); // convert to grayscale
 
 		// Compute density
-		dm = gm - bg + 255;
-		next.swap(prev);
-		next = dm.clone();
-		cv::ocl::threshold(dm, dm, 200, 255, cv::THRESH_BINARY);
-		cv::ocl::GaussianBlur(dm, dm, cv::Size(95, 95), 0, 0);
-		cv::ocl::addWeighted(dm, -4, dm, 0, 1024, dm);
+		gm = gm - bg + 255;
+		prev = next;
+		next = gm.clone();
+		cv::threshold(gm, gm, 200, 255, cv::THRESH_BINARY);
+		cv::GaussianBlur(gm, gm, cv::Size(95, 95), 0, 0);
+		cv::addWeighted(gm, -4, gm, 0, 1024, gm);
 
 		// Compute density mask
-		cv::ocl::threshold(dm, mask, 10, 255, cv::THRESH_BINARY);
+		cv::threshold(gm, mask, 40, 255, cv::THRESH_BINARY);
 
 		// Compute optical flow
 		if (i == start) continue; // requires two frames
-		flow(prev, next, u, v);
-		flow.flags |= cv::OPTFLOW_USE_INITIAL_FLOW;
+		cv::calcOpticalFlowFarneback(prev, next, uv, pyr_scale, levels, winSize, iterations, poly_n, poly_sigma, flags);
+		flags |= cv::OPTFLOW_USE_INITIAL_FLOW;
 
 		if (live || vid) {
-			cv::addWeighted(im, 0.5, color(dm), 0.5, 0, im);
-			plotVelocity(im, u, v, mask);
+			cv::addWeighted(im, 0.5, color(gm), 0.5, 0, im);
+			plotVelocity(im, uv, mask);
 		}
 
 		if (live) {
@@ -310,15 +310,10 @@ int main(int argc, char* argv[]) {
 			const hsize_t count[3] = { 1, 64, 128 };
 			const hsize_t start[3] = { j, 0, 0 };
 			file_dspace.selectHyperslab(H5S_SELECT_SET, count, start);
-			cv::ocl::resize(u, usm, usm.size());
-			cv::ocl::resize(v, vsm, vsm.size());
-			smf[0] = usm;
-			smf[1] = vsm;
-			cv::merge(smf, 2, smf2);
-			velocity_dset.write(smf2.ptr(), xy_dtype, mem_space, file_dspace);
-			cv::ocl::resize(dm, dsm, dsm.size());
-			sm = dsm;
-			density_dset.write(sm.ptr(), H5::PredType::NATIVE_UCHAR, mem_space, file_dspace);
+			cv::resize(uv, suv, size);
+			velocity_dset.write(suv.ptr(), xy_dtype, mem_space, file_dspace);
+			cv::resize(gm, sd, size);
+			density_dset.write(sd.ptr(), H5::PredType::NATIVE_UCHAR, mem_space, file_dspace);
 		}
 
 		std::cout << '\r' << dots[j%256] << ' ' << std::setw(3) << (j + 1) * 100 / count << "%" << std::flush;

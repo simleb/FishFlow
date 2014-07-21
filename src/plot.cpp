@@ -52,27 +52,28 @@ namespace {
 	}
 }
 
-cv::Mat color(const cv::ocl::oclMat& dm) {
-	cv::Mat c(dm.size(), CV_8UC3), m(dm);
+cv::Mat color(const cv::Mat& m) {
+	cv::Mat c(m.size(), CV_8UC3);
 	std::transform(m.begin<uchar>(), m.end<uchar>(), c.begin<cv::Vec3b>(), &colorize);
 	return c;
 }
 
-void plotVelocity(cv::Mat& frame, const cv::Mat& u, const cv::Mat& v, const cv::Mat& mask) {
+void plotVelocity(cv::Mat& frame, const cv::Mat& uv, const cv::Mat& mask) {
 	const int nx = grid_nx % 2 ? grid_nx - 1 : grid_nx;
 	const int ny = grid_ny % 2 ? grid_ny - 1 : grid_ny;
 	const int w = frame.size().width;
 	const int h = frame.size().height;
 	for (int i = 0; i < ny / 2; ++i) {
 		for (int j = 0; j < nx / 2; ++j) {
-			const int ii = boost::math::round(h * (2 * i + 1) / ny);
-			const int jj = boost::math::round(w * (2 * j + 1) / nx);
+			const int ii = h * (2 * i + 1) / ny;
+			const int jj = w * (2 * j + 1) / nx;
 			if (mask.at<uchar>(ii, jj)) {
 				cv::Point p1, p2;
 				p1.x = w * (2 * j + 1) / nx;
 				p1.y = h * (2 * i + 1) / ny;
-				const int vx = boost::math::round(arrow_scale * u.at<float>(ii, jj));
-				const int vy = boost::math::round(arrow_scale * v.at<float>(ii, jj));
+				cv::Vec2f v(uv.at<cv::Vec2f>(ii, jj));
+				const int vx = boost::math::round(arrow_scale * v(0));
+				const int vy = boost::math::round(arrow_scale * v(1));
 				p2.x = p1.x + vx;
 				p2.y = p1.y + vy;
 				drawArrow(frame, p1, p2);

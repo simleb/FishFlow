@@ -28,7 +28,7 @@ endif()
 # ---------------------------------------------------------------------------- #
 
 # Find OpenCV
-find_package(OpenCV REQUIRED core highgui ocl)
+find_package(OpenCV REQUIRED core highgui)
 include("${OpenCV_DIR}/OpenCVConfig.cmake")
 include_directories(${OpenCV_INCLUDE_DIRS})
 list(APPEND LIBRARIES ${OpenCV_LIBRARIES})
