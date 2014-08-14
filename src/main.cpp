@@ -38,7 +38,9 @@ po::variables_map parse(int argc, char **argv) {
 	("frame.start", po::value<int>()->default_value(1), "first frame of interest")
 	("frame.stop", po::value<int>(), "last frame of interest")
 	("frame.step", po::value<int>()->default_value(1), "step between frames of interest")
-	("frame.count", po::value<int>(), "number of frames of interest");
+	("frame.count", po::value<int>(), "number of frames of interest")
+	("grid.width", po::value<int>()->default_value(128), "number of horizontal grid points")
+	("grid.height", po::value<int>()->default_value(64), "number of vertical grid points");
 	op.add(fop);
 
 	// Parse command line
@@ -240,6 +242,9 @@ int main(int argc, char* argv[]) {
 			return -1;
 		}
 	}
+	const int gw = config["grid.width"].as<int>();
+	const int gh = config["grid.height"].as<int>();
+	Plot plot(gw, gh);
 	H5::DataSet velocity_dset;
 	H5::DataSet density_dset;
 	H5::CompType xy_dtype(2 * sizeof(float));
@@ -250,7 +255,7 @@ int main(int argc, char* argv[]) {
 			path = config["input"].as<std::string>() + ".flow.h5";
 		}
 		file = H5::H5File(path, H5F_ACC_TRUNC);
-		const hsize_t dims[3] = { count, 128, 64 };
+		const hsize_t dims[3] = { count, gw, gh };
 		file_dspace = H5::DataSpace(3, &dims[0]);
 		mem_space = H5::DataSpace(2, &dims[1]);
 		xy_dtype.insertMember("x", 0 * sizeof(float), H5::PredType::NATIVE_FLOAT);
@@ -261,9 +266,9 @@ int main(int argc, char* argv[]) {
 
 	// Compute density and optical flow
 	std::cerr << "Computing density and optical flow:" << std::endl;
-	const cv::Size size(64, 128);
+	const cv::Size size(gh, gw);
 	cv::Mat prev, next, mask, uv;
-	cv::Mat sd(64, 128, CV_8UC1), suv(64, 128, CV_32FC2);
+	cv::Mat sd(gh, gw, CV_8UC1), suv(gh, gw, CV_32FC2);
 	// Gunnar Farneback’s Optical Flow options
 	const double pyr_scale = 0.5;
 	const int levels = 2;
@@ -294,7 +299,7 @@ int main(int argc, char* argv[]) {
 
 		if (live || vid) {
 			cv::addWeighted(im, 0.5, color(gm), 0.5, 0, im);
-			plotVelocity(im, uv, mask);
+			plot.plotVelocity(im, uv, mask);
 		}
 
 		if (live) {
@@ -307,7 +312,7 @@ int main(int argc, char* argv[]) {
 		}
 
 		if (data) {
-			const hsize_t count[3] = { 1, 128, 64 };
+			const hsize_t count[3] = { 1, gw, gh };
 			const hsize_t start[3] = { j, 0, 0 };
 			file_dspace.selectHyperslab(H5S_SELECT_SET, count, start);
 			cv::resize(uv, suv, size);

@@ -10,8 +10,6 @@ namespace {
 	const int arrow_head_size = 4;
 	const cv::Scalar arrow_color = cv::Scalar(0, 0, 255);
 	const float arrow_scale = 10;
-	const int grid_nx = 128;
-	const int grid_ny = 64;
 
 	const double pi = boost::math::constants::pi<double>();
 
@@ -58,9 +56,9 @@ cv::Mat color(const cv::Mat& m) {
 	return c;
 }
 
-void plotVelocity(cv::Mat& frame, const cv::Mat& uv, const cv::Mat& mask) {
-	const int nx = grid_nx % 2 ? grid_nx - 1 : grid_nx;
-	const int ny = grid_ny % 2 ? grid_ny - 1 : grid_ny;
+void Plot::plotVelocity(cv::Mat& frame, const cv::Mat& uv, const cv::Mat& mask) {
+	const int nx = _gw % 2 ? _gw - 1 : _gw;
+	const int ny = _gh % 2 ? _gh - 1 : _gh;
 	const int w = frame.size().width;
 	const int h = frame.size().height;
 	for (int i = 0; i < ny / 2; ++i) {

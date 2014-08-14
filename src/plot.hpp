@@ -5,6 +5,14 @@
 
 cv::Mat color(const cv::Mat& m);
 
-void plotVelocity(cv::Mat& frame, const cv::Mat& uv, const cv::Mat& mask);
+class Plot {
+public:
+	Plot(int grid_width, int grid_height) : _gw(grid_width), _gh(grid_height) {}
+
+	void plotVelocity(cv::Mat& frame, const cv::Mat& uv, const cv::Mat& mask);
+
+private:
+	const int _gw, _gh;
+};
 
 #endif
