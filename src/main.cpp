@@ -255,7 +255,11 @@ int main(int argc, char* argv[]) {
 			path = config["input"].as<std::string>() + ".flow.h5";
 		}
 		file = H5::H5File(path, H5F_ACC_TRUNC);
-		const hsize_t dims[3] = { count, gw, gh };
+		const hsize_t dims[3] = {
+			static_cast<hsize_t>(count),
+			static_cast<hsize_t>(gw),
+			static_cast<hsize_t>(gh)
+		};
 		file_dspace = H5::DataSpace(3, &dims[0]);
 		mem_space = H5::DataSpace(2, &dims[1]);
 		xy_dtype.insertMember("x", 0 * sizeof(float), H5::PredType::NATIVE_FLOAT);
@@ -312,8 +316,12 @@ int main(int argc, char* argv[]) {
 		}
 
 		if (data) {
-			const hsize_t count[3] = { 1, gw, gh };
-			const hsize_t start[3] = { j, 0, 0 };
+			const hsize_t start[3] = { static_cast<hsize_t>(j), 0, 0 };
+			const hsize_t count[3] = {
+				1,
+				static_cast<hsize_t>(gw),
+				static_cast<hsize_t>(gh)
+			};
 			file_dspace.selectHyperslab(H5S_SELECT_SET, count, start);
 			cv::resize(uv, suv, size);
 			cv::flip(suv, suv, 0);
