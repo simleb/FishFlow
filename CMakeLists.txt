@@ -17,10 +17,10 @@ cmake_minimum_required(VERSION 2.8)
 project(fishFlow CXX)
 
 if (NOT CMAKE_BUILD_TYPE)
-    message(STATUS "No build type selected, default to Release")
-    set(CMAKE_BUILD_TYPE Release
-        CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel."
-        FORCE)
+	message(STATUS "No build type selected, default to Release")
+	set(CMAKE_BUILD_TYPE Release
+		CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel."
+		FORCE)
 endif()
 
 # ---------------------------------------------------------------------------- #
@@ -66,18 +66,12 @@ set(SOURCES
 add_executable(fishFlow ${SOURCES})
 target_link_libraries(fishFlow ${LIBRARIES})
 if(GOOGLE_PERFTOOLS_PROFILER)
-    target_link_libraries(fishFlow debug ${GOOGLE_PERFTOOLS_PROFILER})
+	target_link_libraries(fishFlow debug ${GOOGLE_PERFTOOLS_PROFILER})
 endif()
 
 # Enable all warnings
-if(CMAKE_COMPILER_IS_GNUCXX OR ${CMAKE_CXX_COMPILER_ID} MATCHES Clang)
-	add_definitions(-Wall)
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang|GNU|Intel")
+	list(APPEND CMAKE_CXX_FLAGS "-Wall")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	list(APPEND CMAKE_CXX_FLAGS "/W4")
 endif()
-
-# C++11
-#if(${CMAKE_CXX_COMPILER_ID} MATCHES Clang)
-#    list(APPEND CMAKE_CXX_FLAGS "-std=c++11 -stdlib=libc++")
-#else()
-#    list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
-#endif()
-
