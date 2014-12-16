@@ -57,7 +57,7 @@ po::variables_map parse(int argc, char **argv) {
 		}
 	}
 
-    // Parse stdin
+	// Parse stdin
 	if (!isatty(STDIN_FILENO)) {
 		po::store(po::parse_config_file(std::cin, fop), vm);
 	}
@@ -91,7 +91,7 @@ void frameLogic(const po::variables_map& config, int& start, int& stop, int& ste
 	if (config.count("frame.stop")) {
 		stop = config["frame.stop"].as<int>();
 	}
-    if (config.count("frame.count")) {
+	if (config.count("frame.count")) {
 		count = config["frame.count"].as<int>();
 	}
 	if (start == 0) {
@@ -266,7 +266,7 @@ int main(int argc, char* argv[]) {
 
 	// Compute density and optical flow
 	std::cerr << "Computing density and optical flow:" << std::endl;
-	const cv::Size size(gh, gw);
+	const cv::Size size(gw, gh);
 	cv::Mat prev, next, mask, uv;
 	cv::Mat sd(gh, gw, CV_8UC1), suv(gh, gw, CV_32FC2);
 	// Gunnar Farneback’s Optical Flow options
@@ -316,8 +316,12 @@ int main(int argc, char* argv[]) {
 			const hsize_t start[3] = { j, 0, 0 };
 			file_dspace.selectHyperslab(H5S_SELECT_SET, count, start);
 			cv::resize(uv, suv, size);
+			cv::flip(suv, suv, 0);
+			cv::transpose(suv, suv);
 			velocity_dset.write(suv.ptr(), xy_dtype, mem_space, file_dspace);
 			cv::resize(gm, sd, size);
+			cv::flip(sd, sd, 0);
+			cv::transpose(sd, sd);
 			density_dset.write(sd.ptr(), H5::PredType::NATIVE_UCHAR, mem_space, file_dspace);
 		}
 
