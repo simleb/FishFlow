@@ -207,11 +207,11 @@ int main(int argc, char* argv[]) {
 	if (bg.empty()) {
 		bg = cv::Mat(h, w, CV_32FC1, cv::Scalar::all(0));
 		std::cout << "Computing background image:" << std::endl;
-		std::cout << "    0%" << std::flush;
+		std::cout << "    0% (1/" << c << ")" << std::flush;
 		for (int i = 0; cap.read(im); ++i) {
 			cv::cvtColor(im, gm, CV_RGB2GRAY); // convert to grayscale
 			cv::accumulate(gm, bg);
-			std::cout << '\r' << dots[i%256] << ' ' << std::setw(3) << (i + 1) * 100 / c << "%" << std::flush;
+			std::cout << '\r' << dots[i%256] << ' ' << std::setw(3) << (i + 1) * 100 / c << "% (" << i+1 << "/" << c << ")" << std::flush;
 		}
 		bg /= c;
 		bg.convertTo(bg, CV_8U);
@@ -281,7 +281,7 @@ int main(int argc, char* argv[]) {
 	const int poly_n = 7;
 	const double poly_sigma = 1.5;
 	int flags = cv::OPTFLOW_FARNEBACK_GAUSSIAN;
-	std::cout << "    0%" << std::flush;
+	std::cout << "    0% (1/" << count << ")" << std::flush;
 	for (int i = start, j = 0; i <= stop && cap.read(im); i += step, ++j) {
 		cv::cvtColor(im, gm, CV_RGB2GRAY); // convert to grayscale
 
@@ -333,7 +333,7 @@ int main(int argc, char* argv[]) {
 			density_dset.write(sd.ptr(), H5::PredType::NATIVE_UCHAR, mem_space, file_dspace);
 		}
 
-		std::cout << '\r' << dots[j%256] << ' ' << std::setw(3) << (j + 1) * 100 / count << "%" << std::flush;
+		std::cout << '\r' << dots[j%256] << ' ' << std::setw(3) << (j + 1) * 100 / count << "% (" << j+1 << "/" << count << ")" << std::flush;
 
 		// Skip frames instead of setting CV_CAP_PROP_POS_FRAMES to avoid issue with keyframes
 		for (int k = 1; k < step; ++k) cap.grab();
